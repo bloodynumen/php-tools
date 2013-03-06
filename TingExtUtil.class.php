@@ -222,12 +222,13 @@ class TingExtUtil
 
         //get song information
         if ($songIdStr) {
-            $songInfo = $db->select('ting_song_info', 'song_id,title,author',"song_id in ($songIdStr)");
+            $songInfo = $db->select('ting_song_info', 'song_id,title,author,publishtime',"song_id in ($songIdStr)");
 
             $newSongInfo = array();
             foreach ($songInfo as $songInfoKey=> $songInfoVal) {
                 $newSongInfo[$songInfoVal['song_id']]['artist_name'] = $songInfoVal['author'];
                 $newSongInfo[$songInfoVal['song_id']]['song_title'] = $songInfoVal['title'];
+                $newSongInfo[$songInfoVal['song_id']]['song_publishtime'] = $songInfoVal['publishtime'];
             }
 
             foreach ($res as $resKey=> $resVal) {
@@ -803,6 +804,47 @@ class TingExtUtil
             }
         }
         return FALSE;
+    }
+
+    /**
+        * @brief 导出csv格式 调用此方法前 必须无输出
+        *
+        * @param $array 数组数据 必需
+        * @param $csvName csv名称 可选
+        * @param $column 列名 可选
+        *
+        * @returns 
+     */
+    public static function exportToCsv($array, $csvName = 'csv', $column = array()) {
+        if (!is_array($array) || empty($array)) {
+            return FALSE;
+        }
+        $array = self::transcodingArray($array);
+        header('Content-Type:application/csv;');
+        header('Content-Disposition:attachment;filename=' . $csvName . '.csv');
+        $handle = fopen('php://output', 'w');
+        if ($column) {
+            $column = self::transcodingArray($column);
+            fputcsv($handle, $column);
+        }
+        foreach ($array as $row) {
+            fputcsv($handle, $row);
+        }
+        return fclose($handle);
+    }
+
+    public static function transcodingArray($array,  $to = 'gbk', $from = 'utf8') {
+        if (!is_array($array) || empty($array)) {
+            return array();
+        }
+        foreach ($array as $k => $val) {
+            if (!is_array($val)) {
+                $array[$k] = mb_convert_encoding($val, $to, $from);
+            } else {
+                $array[$k] = self::transcodingArray($val, $to, $from);
+            }
+        }
+        return $array;
     }
 }
 ?>
